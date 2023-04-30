@@ -9,10 +9,12 @@ export class RefreshTokenStrategy extends PassportStrategy(
   'jwt-refresh',
 ) {
   constructor() {
+    console.log(process.env.REFRESH_TOKEN_KEY);
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.REFRESH_TOKEN_KEY,
+      secretOrKey:
+        process.env.REFRESH_TOKEN_KEY || 'QNILob9IuU35oa0BKrubQmKDDIcHSmni',
       passReqToCallback: true,
     });
   }
