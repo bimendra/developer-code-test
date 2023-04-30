@@ -104,7 +104,26 @@ export class AuthService {
     }
   }
 
-  logout() {}
+  async signout(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+    if (user) {
+      await this.prisma.user.updateMany({
+        where: {
+          id: user.id,
+          refresh_token_hash: {
+            not: null,
+          },
+        },
+        data: {
+          refresh_token_hash: null,
+        },
+      });
+    }
+  }
 
   refreshToken() {}
 }
