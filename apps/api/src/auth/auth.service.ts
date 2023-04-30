@@ -1,14 +1,39 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { faker } from '@faker-js/faker';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignupDto } from './dto';
-import { HttpException } from '@nestjs/common/exceptions';
-import { HttpStatus } from '@nestjs/common/enums';
+import { JwtService } from '@nestjs/jwt/dist';
+import { Tokens } from './types';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private jwtService: JwtService) {}
+
+  private async generateTokens(email, userId): Promise<Tokens> {
+    return {
+      access_token: await this.jwtService.signAsync(
+        {
+          email: email,
+          sub: userId,
+        },
+        {
+          secret: process.env.ACCESS_TOKEN_KEY,
+          expiresIn: 60 * 15,
+        },
+      ),
+      refresh_token: await this.jwtService.signAsync(
+        {
+          email: email,
+          sub: userId,
+        },
+        {
+          secret: process.env.REFRESH_TOKEN_KEY,
+          expiresIn: 60 * 15 * 24,
+        },
+      ),
+    };
+  }
 
   async signup(signupDto: SignupDto) {
     try {
@@ -19,10 +44,7 @@ export class AuthService {
           },
         })
       ) {
-        throw new HttpException(
-          'User by this email already exists.',
-          HttpStatus.FORBIDDEN,
-        );
+        throw new UnauthorizedException();
       }
       const user = await this.prisma.user.create({
         data: {
@@ -33,7 +55,7 @@ export class AuthService {
           avatar: faker.internet.avatar(),
         },
       });
-      return user;
+      return await this.generateTokens(user.email, user.id);
     } catch (error) {
       return error;
     }
