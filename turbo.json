@@ -8,5 +8,6 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     }
-  }
+  },
+  "globalDependencies": [".env", "tsconfig.json"]
 }
