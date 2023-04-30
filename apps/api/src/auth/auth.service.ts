@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { hash, compare } from 'bcrypt';
-import { faker } from '@faker-js/faker';
+// import { faker } from '@faker-js/faker';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SigninDto, SignupDto } from './dto';
 import { JwtService } from '@nestjs/jwt/dist';
@@ -69,7 +69,7 @@ export class AuthService {
         last_name: signupDto.lastName,
         email: signupDto.email,
         password_hash: await hash(signupDto.password, 10),
-        avatar: faker.internet.avatar(),
+        // avatar: faker.internet.avatar(),
       },
     });
     const tokens = await this.generateTokens(user.email, user.id);
