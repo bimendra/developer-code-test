@@ -11,8 +11,11 @@ import {
 import { ExercisesService } from './exercises.service';
 import { CreateExerciseDto } from './dto/create-exercise.dto';
 import { UpdateExerciseDto } from './dto/update-exercise.dto';
+import { UseGuards } from '@nestjs/common/decorators';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @Controller('exercises')
+@UseGuards(new JwtAuthGuard())
 export class ExercisesController {
   constructor(private readonly exercisesService: ExercisesService) {}
 
