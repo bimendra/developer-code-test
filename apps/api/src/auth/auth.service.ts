@@ -1,8 +1,12 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { hash } from 'bcrypt';
+import {
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { hash, compare } from 'bcrypt';
 import { faker } from '@faker-js/faker';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { SignupDto } from './dto';
+import { SigninDto, SignupDto } from './dto';
 import { JwtService } from '@nestjs/jwt/dist';
 import { Tokens } from './types';
 
@@ -75,7 +79,30 @@ export class AuthService {
     }
   }
 
-  signin() {}
+  async signin(signinDto: SigninDto): Promise<Tokens> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: {
+          email: signinDto.email,
+        },
+      });
+      if (!user) {
+        throw new ForbiddenException();
+      }
+      const passwordMatches = await compare(
+        signinDto.password,
+        user.password_hash,
+      );
+      if (!passwordMatches) {
+        throw new UnauthorizedException('Access denied');
+      }
+      const tokens = await this.generateTokens(user.email, user.id);
+      this.saveRefreshToken(user.id, tokens.refresh_token);
+      return tokens;
+    } catch (error) {
+      return error;
+    }
+  }
 
   logout() {}
 
