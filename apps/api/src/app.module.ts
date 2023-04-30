@@ -8,7 +8,7 @@ import { ExercisesModule } from './exercises/exercises.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '../../..', 'client', 'dist'),
+      rootPath: join(__dirname, '../..', 'client', 'dist'),
     }),
     AuthModule,
     PrismaModule,
