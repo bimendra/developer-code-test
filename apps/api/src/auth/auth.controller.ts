@@ -46,7 +46,19 @@ export class AuthController {
 
   // @UseGuards(JwtAuthGuard)
   @Post('/refresh-token')
-  refreshToken(@Body() { user_id: userId }, @Req() request: Request) {
-    this.authService.refreshToken(userId, request);
+  async refreshToken(
+    @Body() { user_id: userId },
+    @Req() request: Request,
+    @Response() res,
+  ): Promise<any> {
+    const { access_token, refresh_token } = await this.authService.refreshToken(
+      userId,
+      request,
+    );
+    res.cookie('jwt', refresh_token, {
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+    return res.json({ access_token });
   }
 }
