@@ -10,7 +10,7 @@ import { Tokens } from './types';
 export class AuthService {
   constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
-  private async generateTokens(email, userId): Promise<Tokens> {
+  private async generateTokens(email: string, userId: string): Promise<Tokens> {
     return {
       access_token: await this.jwtService.signAsync(
         {
@@ -35,6 +35,18 @@ export class AuthService {
     };
   }
 
+  private async saveRefreshToken(userId: string, refreshToken: string) {
+    const refreshTokenHash = await hash(refreshToken, 10);
+    await this.prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        refresh_token_hash: refreshTokenHash,
+      },
+    });
+  }
+
   async signup(signupDto: SignupDto) {
     try {
       if (
@@ -55,7 +67,9 @@ export class AuthService {
           avatar: faker.internet.avatar(),
         },
       });
-      return await this.generateTokens(user.email, user.id);
+      const tokens = await this.generateTokens(user.email, user.id);
+      this.saveRefreshToken(user.id, tokens.refresh_token);
+      return tokens;
     } catch (error) {
       return error;
     }
