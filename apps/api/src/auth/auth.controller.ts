@@ -1,4 +1,5 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { SigninDto, SignupDto } from './dto';
 import { Tokens } from './types';
@@ -17,11 +18,12 @@ export class AuthController {
     return this.authService.signin(signinDto);
   }
 
-  @Post('/logout')
-  logout() {
-    this.authService.logout();
+  @Post('/signout')
+  logout(@Body() { user_id: userId }) {
+    this.authService.signout(userId);
   }
 
+  @UseGuards(AuthGuard('jwt-refresh'))
   @Post('/refresh-token')
   refreshToken() {
     this.authService.refreshToken();
