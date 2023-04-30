@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   NotAcceptableException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { hash, compare } from 'bcrypt';
 import { faker } from '@faker-js/faker';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -118,5 +119,19 @@ export class AuthService {
     }
   }
 
-  refreshToken() {}
+  async refreshToken(userId: string, request: Request) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+      },
+    });
+    if (!user) {
+      throw new ForbiddenException('Access denied');
+    }
+    // TODO
+    // Compare refresh token hash saved with the jwt token coming from cookie
+    const tokens = await this.generateTokens(user.email, user.id);
+    this.saveRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
+  }
 }
