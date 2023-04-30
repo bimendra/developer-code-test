@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
+  NotAcceptableException,
 } from '@nestjs/common';
 import { hash, compare } from 'bcrypt';
 import { faker } from '@faker-js/faker';
@@ -52,56 +53,48 @@ export class AuthService {
   }
 
   async signup(signupDto: SignupDto) {
-    try {
-      if (
-        await this.prisma.user.findUnique({
-          where: {
-            email: signupDto.email,
-          },
-        })
-      ) {
-        throw new UnauthorizedException();
-      }
-      const user = await this.prisma.user.create({
-        data: {
-          first_name: signupDto.firstName,
-          last_name: signupDto.lastName,
+    if (
+      await this.prisma.user.findUnique({
+        where: {
           email: signupDto.email,
-          password_hash: await hash(signupDto.password, 10),
-          avatar: faker.internet.avatar(),
         },
-      });
-      const tokens = await this.generateTokens(user.email, user.id);
-      this.saveRefreshToken(user.id, tokens.refresh_token);
-      return tokens;
-    } catch (error) {
-      return error;
+      })
+    ) {
+      throw new NotAcceptableException('Email already registered');
     }
+    const user = await this.prisma.user.create({
+      data: {
+        first_name: signupDto.firstName,
+        last_name: signupDto.lastName,
+        email: signupDto.email,
+        password_hash: await hash(signupDto.password, 10),
+        avatar: faker.internet.avatar(),
+      },
+    });
+    const tokens = await this.generateTokens(user.email, user.id);
+    this.saveRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
   }
 
   async signin(signinDto: SigninDto): Promise<Tokens> {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: {
-          email: signinDto.email,
-        },
-      });
-      if (!user) {
-        throw new ForbiddenException();
-      }
-      const passwordMatches = await compare(
-        signinDto.password,
-        user.password_hash,
-      );
-      if (!passwordMatches) {
-        throw new UnauthorizedException('Access denied');
-      }
-      const tokens = await this.generateTokens(user.email, user.id);
-      this.saveRefreshToken(user.id, tokens.refresh_token);
-      return tokens;
-    } catch (error) {
-      return error;
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: signinDto.email,
+      },
+    });
+    if (!user) {
+      throw new ForbiddenException();
     }
+    const passwordMatches = await compare(
+      signinDto.password,
+      user.password_hash,
+    );
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const tokens = await this.generateTokens(user.email, user.id);
+    this.saveRefreshToken(user.id, tokens.refresh_token);
+    return tokens;
   }
 
   async signout(userId: string) {
